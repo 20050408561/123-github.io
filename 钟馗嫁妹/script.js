@@ -142,55 +142,77 @@ function generateCards() {
     });
 }
 
-// 音效元素
-const backgroundMusic = document.getElementById('background-music');
-const cardFlipSound = document.getElementById('card-flip');
-const modalOpenSound = document.getElementById('modal-open');
-const modalCloseSound = document.getElementById('modal-close');
-
 // 处理卡牌点击
 function handleCardClick(e) {
     const card = e.currentTarget;
     
-    // 如果卡牌已经翻转（显示背面），则打开弹窗
+    // 如果卡牌已经翻转（显示背面），则显示图片2秒后打开弹窗
     if (card.classList.contains('flipped')) {
         const cardId = parseInt(card.dataset.id);
         const cardInfo = cardData.find(c => c.id === cardId);
         
         if (cardInfo) {
-            // 播放弹窗打开音效
-            modalOpenSound.currentTime = 0;
-            modalOpenSound.play();
+            // 创建临时图片元素
+            const tempImage = document.createElement('div');
+            tempImage.style.position = 'fixed';
+            tempImage.style.top = '50%';
+            tempImage.style.left = '50%';
+            tempImage.style.transform = 'translate(-50%, -50%)';
+            tempImage.style.zIndex = '2000';
+            tempImage.style.width = '60%';
+            tempImage.style.maxWidth = '800px';
+            tempImage.style.height = 'auto';
+            tempImage.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.5)';
+            tempImage.style.borderRadius = '10px';
+            tempImage.style.animation = 'imageFadeIn 0.5s ease-out forwards';
+            tempImage.innerHTML = `<img src="${cardInfo.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">`;
             
-            modalTitle.textContent = cardInfo.title;
-            modalContent.textContent = cardInfo.content;
-            modal.style.display = 'block';
+            // 添加到页面
+            document.body.appendChild(tempImage);
+            
+            // 2秒后移除图片并打开弹窗
+            setTimeout(() => {
+                tempImage.style.animation = 'imageFadeOut 0.5s ease-in forwards';
+                
+                // 动画结束后移除元素并打开弹窗
+                setTimeout(() => {
+                    document.body.removeChild(tempImage);
+                    
+                    // 先隐藏弹窗内容，移除动画效果
+                    modalTitle.style.opacity = '0';
+                    modalContent.style.opacity = '0';
+                    
+                    // 设置弹窗内容
+                    modalTitle.textContent = cardInfo.title;
+                    modalContent.textContent = cardInfo.content;
+                    
+                    // 显示弹窗
+                    modal.style.display = 'block';
+                    
+                    // 强制重排，然后重新触发动画
+                    setTimeout(() => {
+                        modalTitle.style.animation = 'none';
+                        modalContent.style.animation = 'none';
+                        void modalTitle.offsetWidth; // 触发重排
+                        modalTitle.style.animation = 'textFadeIn 1s ease-out forwards';
+                        modalContent.style.animation = 'textFadeIn 1s ease-out 0.3s forwards';
+                    }, 10);
+                }, 500);
+            }, 2000);
         }
     } else {
-        // 播放卡牌翻转音效
-        cardFlipSound.currentTime = 0;
-        cardFlipSound.play();
-        
-        // 翻转卡牌
+        // 否则翻转卡牌
         card.classList.add('flipped');
     }
 }
 
 // 关闭弹窗
 function closeModal() {
-    // 播放弹窗关闭音效
-    modalCloseSound.currentTime = 0;
-    modalCloseSound.play();
-    
     modal.style.display = 'none';
     
     // 找到所有翻转的卡牌，将它们翻转回正面
     const flippedCards = document.querySelectorAll('.card.flipped');
     flippedCards.forEach(card => {
-        // 播放卡牌翻转音效
-        cardFlipSound.currentTime = 0;
-        cardFlipSound.play();
-        
         card.classList.remove('flipped');
     });
 }
@@ -206,11 +228,4 @@ window.addEventListener('click', (e) => {
 });
 
 // 初始化
-window.addEventListener('DOMContentLoaded', function() {
-    generateCards();
-    
-    // 播放背景音乐
-    backgroundMusic.play().catch(e => {
-        console.log('背景音乐播放失败:', e);
-    });
-});
+window.addEventListener('DOMContentLoaded', generateCards);
